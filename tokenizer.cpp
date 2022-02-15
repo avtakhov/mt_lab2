@@ -1,6 +1,6 @@
 #include "tokenizer.h"
 
-#include <optional>
+#include <iostream>
 
 namespace parser {
 
@@ -16,7 +16,7 @@ Token::Type CharType(char c) {
     default: {
       return std::isalpha(c) || std::isdigit(c) || c == '_' ? Token::Type::kWord
                                                             : Token::Type::kUnknown;
-    };
+    }
   }
 }
 
@@ -36,9 +36,6 @@ std::size_t SkipSpaces(const std::string &target, std::size_t pos) {
 
 Token Tokenizer::Read(std::size_t pos) const {
   pos = SkipSpaces(target_, pos);
-  if (pos == target_.length()) {
-    return {Token::Type::kEnd, std::string_view(target_.data() + pos, 0)};
-  }
   std::size_t length = 1;
   auto type = CharType(target_[pos]);
   if (type == Token::Type::kWord) {
@@ -48,50 +45,47 @@ Token Tokenizer::Read(std::size_t pos) const {
     }
     length = i - pos;
   }
-  return {type, std::string_view(target_.data() + pos, length)};
+  return {type, std::string_view(target_.data() + pos, length), pos};
 }
 
-Iterator Tokenizer::begin() const {
-  return Iterator(this, 0);
+TokenizerIterator Tokenizer::begin() const {
+  return TokenizerIterator(this, 0);
 }
 
-Iterator Tokenizer::end() const {
-  return Iterator(this, target_.size());
+TokenizerIterator Tokenizer::end() const {
+  return TokenizerIterator(this, target_.size());
 }
 
 Tokenizer::Tokenizer(std::string target) : target_(std::move(target)) {}
 
-Iterator &Iterator::operator++() {
-  current_pos_ = Position() + last_.value.size();
+TokenizerIterator &TokenizerIterator::operator++() {
+  current_pos_ = (last_.value.data() - tokenizer_->begin().last_.value.data()) + last_.value.size();
   last_ = tokenizer_->Read(current_pos_);
   return *this;
 }
 
-Iterator Iterator::operator++(int) {
+TokenizerIterator TokenizerIterator::operator++(int) {
   auto result = *this;
   this->operator++();
   return result;
 }
 
-bool Iterator::operator==(const Iterator &other) const {
+bool TokenizerIterator::operator==(const TokenizerIterator &other) const {
   return current_pos_ == other.current_pos_;
 }
-bool Iterator::operator!=(const Iterator &other) const {
+bool TokenizerIterator::operator!=(const TokenizerIterator &other) const {
   return !(*this == other);
 }
 
-Iterator::reference Iterator::operator*() const {
+TokenizerIterator::reference TokenizerIterator::operator*() const {
   return last_;
 }
 
-Iterator::pointer Iterator::operator->() const {
+TokenizerIterator::TokenizerIterator(const Tokenizer *tokenizer, std::size_t position)
+    : tokenizer_(tokenizer), current_pos_(position), last_(tokenizer_->Read(current_pos_)) {}
+
+TokenizerIterator::pointer TokenizerIterator::operator->() const {
   return &last_;
 }
-Iterator::difference_type Iterator::Position() const {
-  return last_.value.data() - tokenizer_->begin()->value.data();
-}
-
-Iterator::Iterator(const Tokenizer *tokenizer, std::size_t position)
-    : tokenizer_(tokenizer), current_pos_(position), last_(tokenizer_->Read(current_pos_)) {}
 
 }

@@ -15,52 +15,48 @@ struct Token {
     kWord,
     kSemicolon,
     kUnknown,
-    kEnd
   };
 
   Type type;
   std::string_view value;
+  std::size_t pos;
 };
 
-struct Iterator;
 struct Tokenizer;
+struct TokenizerIterator;
 
 struct Tokenizer {
   Tokenizer(std::string target);
 
   Token Read(std::size_t pos) const;
 
-  Iterator begin() const;
+  TokenizerIterator begin() const;
 
-  Iterator end() const;
+  TokenizerIterator end() const;
  private:
   std::string target_;
 };
 
-struct Iterator {
+struct TokenizerIterator {
   using iterator_category = std::forward_iterator_tag;
-  using value_type = const Token;
-  using reference = value_type &;
-  using pointer = value_type *;
+  using value_type = Token const;
+  using reference = value_type;
+  using pointer = value_type*;
   using difference_type = std::ptrdiff_t;
 
-  Iterator() = default;
-  Iterator(Iterator const &other) = default;
-  explicit Iterator(Tokenizer const *tokenizer, std::size_t position);
+  TokenizerIterator() = default;
+  TokenizerIterator(TokenizerIterator const &other) = default;
+  explicit TokenizerIterator(Tokenizer const *tokenizer, std::size_t position);
 
-  Iterator &operator=(Iterator const &other) = default;
-  Iterator &operator++();
+  TokenizerIterator &operator=(TokenizerIterator const &other) = default;
+  TokenizerIterator &operator++();
 
-  Iterator operator++(int);
-  bool operator==(Iterator const &other) const;
+  TokenizerIterator operator++(int);
+  bool operator==(TokenizerIterator const &other) const;
 
-  bool operator!=(Iterator const &other) const;
+  bool operator!=(TokenizerIterator const &other) const;
   reference operator*() const;
-
   pointer operator->() const;
-
-  difference_type Position() const;
-
  private:
   Tokenizer const *tokenizer_;
   difference_type current_pos_;
